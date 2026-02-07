@@ -4,46 +4,46 @@ import androidx.compose.runtime.*
 import androidx.navigation.compose.*
 import com.example.mobileapp.ui.model.ZooEntry
 import com.example.mobileapp.ui.screens.*
-import kotlin.random.Random
-
-object Routes {
-    const val GALLERY = "gallery"
-    const val CAMERA = "camera"
-    const val RESULT = "result"
-    const val DETAIL = "detail"
-}
+import com.example.mobileapp.ui.nav.Routes
 
 @Composable
 fun AppNav() {
-
     val nav = rememberNavController()
 
-    // ⭐ shared in-memory ZooDex list
+    // shared in-memory ZooDex list
     val entries = remember { mutableStateListOf<ZooEntry>() }
 
-    // ⭐ helper to add new capture
+    // helper to add new capture
     fun addEntry() {
         val animals = listOf("🦁 Lion", "🐼 Panda", "🐸 Frog", "🍌 Banana", "🍎 Apple")
-
-        val newEntry = ZooEntry(
-            id = entries.size + 1,
-            name = "Friend ${entries.size + 1}",
-            animal = animals.random()
+        entries.add(
+            ZooEntry(
+                id = entries.size + 1,
+                name = "Friend ${entries.size + 1}",
+                animal = animals.random()
+            )
         )
-
-        entries.add(newEntry)
     }
 
     NavHost(
         navController = nav,
-        startDestination = Routes.GALLERY
+        startDestination = Routes.MENU
     ) {
+
+        composable(Routes.MENU) {
+            MainMenuScreen(
+                onCapture = { nav.navigate(Routes.CAMERA) },
+                onPets = { nav.navigate(Routes.GALLERY) },
+                onExit = { /* optional later */ }
+            )
+        }
 
         composable(Routes.GALLERY) {
             GalleryScreen(
                 entries = entries,
+                onBack = { nav.popBackStack() },
                 onOpenCamera = { nav.navigate(Routes.CAMERA) },
-                onOpenDetail = { nav.navigate(Routes.DETAIL) }
+                onOpenDetail = { nav.navigate(Routes.DETAIL) } // later: pass id
             )
         }
 
@@ -51,9 +51,9 @@ fun AppNav() {
             CameraScreen(
                 onBack = { nav.popBackStack() },
                 onCaptured = {
-                    addEntry()              // ⭐ add to ZooDex
+                    addEntry()
                     nav.navigate(Routes.GALLERY) {
-                        popUpTo(Routes.GALLERY) { inclusive = true }
+                        popUpTo(Routes.MENU) { inclusive = false }
                     }
                 }
             )
