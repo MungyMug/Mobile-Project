@@ -69,5 +69,7 @@ dependencies {
     implementation("androidx.camera:camera-camera2:1.3.3")
     implementation("androidx.camera:camera-lifecycle:1.3.3")
     implementation("androidx.camera:camera-view:1.3.3")
+    implementation("com.google.mlkit:face-detection:16.1.6")
+    implementation("androidx.camera:camera-mlkit-vision:1.3.2")
 
 }
