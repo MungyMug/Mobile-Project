@@ -6,6 +6,8 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
+import androidx.camera.core.ImageCapture
+import androidx.camera.core.ImageCaptureException
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.layout.*
@@ -22,12 +24,15 @@ import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetectorOptions
 import kotlinx.coroutines.delay
+import java.io.File
 import java.util.concurrent.atomic.AtomicBoolean
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CameraScreen(
     onBack: () -> Unit,
-    onCaptured: () -> Unit
+    onSkip: () -> Unit,
+    onCaptured: (photoPath: String?) -> Unit
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -52,14 +57,38 @@ fun CameraScreen(
         if (!hasPermission) launcher.launch(Manifest.permission.CAMERA)
     }
 
-    // UI state
     var progress by remember { mutableIntStateOf(0) }
     var captured by remember { mutableStateOf(false) }
-
-    // Prevent multiple navigations
+    var savedPhotoPath by remember { mutableStateOf<String?>(null) }
     val firedCapture = remember { AtomicBoolean(false) }
 
-    // Create the ML Kit detector once
+    val imageCapture = remember {
+        ImageCapture.Builder()
+            .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+            .build()
+    }
+
+    fun takePhoto() {
+        val photoDir = File(context.filesDir, "captures")
+        if (!photoDir.exists()) photoDir.mkdirs()
+        val photoFile = File(photoDir, "pet_${System.currentTimeMillis()}.jpg")
+        val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
+
+        imageCapture.takePicture(
+            outputOptions,
+            mainExecutor,
+            object : ImageCapture.OnImageSavedCallback {
+                override fun onImageSaved(output: ImageCapture.OutputFileResults) {
+                    savedPhotoPath = photoFile.absolutePath
+                    captured = true
+                }
+                override fun onError(exc: ImageCaptureException) {
+                    captured = true
+                }
+            }
+        )
+    }
+
     val detector = remember {
         val opts = FaceDetectorOptions.Builder()
             .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_FAST)
@@ -67,151 +96,151 @@ fun CameraScreen(
         FaceDetection.getClient(opts)
     }
 
-    Column(Modifier.fillMaxSize()) {
-
-        // Top bar
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 10.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            TextButton(onClick = onBack) { Text("Back") }
-            Text("Scanning")
-            TextButton(
-                onClick = {
-                    if (firedCapture.compareAndSet(false, true)) onCaptured()
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Scanning") },
+                navigationIcon = {
+                    Button(
+                        onClick = onBack,
+                        modifier = Modifier.padding(start = 8.dp)
+                    ) { Text("Back") }
                 },
-                enabled = hasPermission
-            ) { Text("Skip") }
-        }
-
-        if (!hasPermission) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("Camera permission required")
-            }
-            return@Column
-        }
-
-        // Camera preview area (smaller)
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(0.6f)
-        ) {
-            AndroidView(
-                modifier = Modifier.fillMaxSize(),
-                factory = { ctx ->
-                    val previewView = PreviewView(ctx).apply {
-                        scaleType = PreviewView.ScaleType.FILL_CENTER
-                    }
-
-                    val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
-                    cameraProviderFuture.addListener({
-                        val cameraProvider = cameraProviderFuture.get()
-
-                        // Preview use case
-                        val preview = androidx.camera.core.Preview.Builder().build().also {
-                            it.setSurfaceProvider(previewView.surfaceProvider)
-                        }
-
-                        // Analysis use case
-                        val analysis = ImageAnalysis.Builder()
-                            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                            .build()
-
-                        analysis.setAnalyzer(mainExecutor) { imageProxy ->
-                            val mediaImage = imageProxy.image
-                            if (mediaImage == null) {
-                                imageProxy.close()
-                                return@setAnalyzer
-                            }
-
-                            val input = InputImage.fromMediaImage(
-                                mediaImage,
-                                imageProxy.imageInfo.rotationDegrees
-                            )
-
-                            detector.process(input)
-                                .addOnSuccessListener { faces ->
-                                    // Face present -> increase progress, else decrease
-                                    if (faces.isNotEmpty()) {
-                                        progress = (progress + 2).coerceAtMost(100)
-                                    } else {
-                                        progress = (progress - 3).coerceAtLeast(0)
-                                    }
-
-                                    // When full -> "captured"
-                                    if (progress >= 100 && firedCapture.compareAndSet(false, true)) {
-                                        captured = true
-                                        // small delay for UX then navigate
-                                        // (can't use delay here; use a LaunchedEffect below)
-                                    }
-                                }
-                                .addOnCompleteListener {
-                                    imageProxy.close()
-                                }
-                        }
-
-                        val selector = CameraSelector.DEFAULT_FRONT_CAMERA
-
-                        try {
-                            cameraProvider.unbindAll()
-                            cameraProvider.bindToLifecycle(
-                                lifecycleOwner,
-                                selector,
-                                preview,
-                                analysis
-                            )
-                        } catch (_: Exception) {
-                            // ignore for now
-                        }
-                    }, mainExecutor)
-
-                    previewView
+                actions = {
+                    Button(
+                        onClick = onSkip,
+                        enabled = hasPermission,
+                        modifier = Modifier.padding(end = 8.dp)
+                    ) { Text("Skip") }
                 }
             )
         }
-
-        // Analysis UI area (below)
+    ) { padding ->
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(0.4f)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.Center
+            Modifier
+                .fillMaxSize()
+                .padding(padding)
         ) {
-            Text("Analyzing…", style = MaterialTheme.typography.headlineSmall)
-            Spacer(Modifier.height(12.dp))
+            if (!hasPermission) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("Camera permission required")
+                }
+                return@Column
+            }
 
-            LinearProgressIndicator(
-                progress = { progress / 100f },
-                modifier = Modifier.fillMaxWidth()
-            )
+            // Camera preview - use COMPATIBLE mode (TextureView) to avoid z-order issues
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(0.6f)
+            ) {
+                AndroidView(
+                    modifier = Modifier.fillMaxSize(),
+                    factory = { ctx ->
+                        val previewView = PreviewView(ctx).apply {
+                            scaleType = PreviewView.ScaleType.FILL_CENTER
+                            implementationMode = PreviewView.ImplementationMode.COMPATIBLE
+                        }
 
-            Spacer(Modifier.height(12.dp))
+                        val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
+                        cameraProviderFuture.addListener({
+                            val cameraProvider = cameraProviderFuture.get()
 
-            Text(
-                text = "$progress%",
-                style = MaterialTheme.typography.titleLarge
-            )
+                            val preview = androidx.camera.core.Preview.Builder().build().also {
+                                it.setSurfaceProvider(previewView.surfaceProvider)
+                            }
 
-            Spacer(Modifier.height(12.dp))
+                            val analysis = ImageAnalysis.Builder()
+                                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                                .build()
 
-            if (captured) {
-                Text("Captured!")
-            } else {
-                Text("Hold still and keep your face in view…")
+                            analysis.setAnalyzer(mainExecutor) { imageProxy ->
+                                val mediaImage = imageProxy.image
+                                if (mediaImage == null) {
+                                    imageProxy.close()
+                                    return@setAnalyzer
+                                }
+
+                                val input = InputImage.fromMediaImage(
+                                    mediaImage,
+                                    imageProxy.imageInfo.rotationDegrees
+                                )
+
+                                detector.process(input)
+                                    .addOnSuccessListener { faces ->
+                                        if (faces.isNotEmpty()) {
+                                            progress = (progress + 2).coerceAtMost(100)
+                                        } else {
+                                            progress = (progress - 3).coerceAtLeast(0)
+                                        }
+
+                                        if (progress >= 100 && firedCapture.compareAndSet(false, true)) {
+                                            takePhoto()
+                                        }
+                                    }
+                                    .addOnCompleteListener {
+                                        imageProxy.close()
+                                    }
+                            }
+
+                            val selector = CameraSelector.DEFAULT_FRONT_CAMERA
+
+                            try {
+                                cameraProvider.unbindAll()
+                                cameraProvider.bindToLifecycle(
+                                    lifecycleOwner,
+                                    selector,
+                                    preview,
+                                    analysis,
+                                    imageCapture
+                                )
+                            } catch (_: Exception) {
+                            }
+                        }, mainExecutor)
+
+                        previewView
+                    }
+                )
+            }
+
+            // Analysis UI area
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(0.4f)
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text("Analyzing…", style = MaterialTheme.typography.headlineSmall)
+                Spacer(Modifier.height(12.dp))
+
+                LinearProgressIndicator(
+                    progress = { progress / 100f },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(Modifier.height(12.dp))
+
+                Text(
+                    text = "$progress%",
+                    style = MaterialTheme.typography.titleLarge
+                )
+
+                Spacer(Modifier.height(12.dp))
+
+                if (captured) {
+                    Text("Captured!")
+                } else {
+                    Text("Hold still and keep your face in view…")
+                }
             }
         }
     }
 
-    // If captured becomes true, wait a bit then navigate
     LaunchedEffect(captured) {
         if (captured) {
             delay(500)
-            onCaptured()
+            onCaptured(savedPhotoPath)
         }
     }
 }

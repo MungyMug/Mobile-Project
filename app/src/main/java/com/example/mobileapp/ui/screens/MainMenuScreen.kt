@@ -1,6 +1,7 @@
 package com.example.mobileapp.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -30,7 +31,8 @@ fun MainMenuScreen(
             .padding(horizontal = 28.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(Modifier.height(90.dp))
+        // Title section takes up ~35% of remaining space
+        Spacer(Modifier.weight(0.2f))
 
         Text(
             text = "PETSAFARI",
@@ -46,13 +48,18 @@ fun MainMenuScreen(
             color = Color.White.copy(alpha = 0.9f)
         )
 
-        Spacer(Modifier.height(60.dp))
+        // Flexible space pushes buttons toward the bottom
+        Spacer(Modifier.weight(0.5f))
 
+        // Buttons section
         MenuBtn(text = "Capture", filled = true, onClick = onCapture)
-        Spacer(Modifier.height(18.dp))
+        Spacer(Modifier.height(14.dp))
         MenuBtn(text = "Pets", filled = true, onClick = onPets)
-        Spacer(Modifier.height(18.dp))
+        Spacer(Modifier.height(14.dp))
         MenuBtn(text = "Exit", filled = false, onClick = onExit)
+
+        // Bottom breathing room — proportional, not fixed
+        Spacer(Modifier.weight(0.12f))
     }
 }
 
@@ -68,14 +75,14 @@ private fun MenuBtn(
         onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .height(70.dp)
+            .heightIn(min = 52.dp, max = 70.dp)
             .clip(shape),
         shape = shape,
         colors = ButtonDefaults.buttonColors(
             containerColor = if (filled) Color.White else Color.Transparent,
             contentColor = if (filled) Color(0xFF0288D1) else Color.White
         ),
-        border = if (!filled) ButtonDefaults.outlinedButtonBorder else null
+        border = if (!filled) ButtonDefaults.outlinedButtonBorder(enabled = true) else null
     ) {
         Text(
             text = text,

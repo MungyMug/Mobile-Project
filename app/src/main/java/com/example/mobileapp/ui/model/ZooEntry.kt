@@ -7,5 +7,6 @@ data class ZooEntry(
     val name: String,
     val animal: String,        // emoji or later sticker key
     val rarity: Rarity = Rarity.COMMON,
-    val unlocked: Boolean = true
+    val unlocked: Boolean = true,
+    val photoPath: String? = null
 )

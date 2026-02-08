@@ -3,6 +3,7 @@ package com.example.mobileapp.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -10,10 +11,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.example.mobileapp.ui.model.ZooEntry
 import com.example.mobileapp.ui.model.Rarity
+import java.io.File
 
 @Composable
 fun ZooCard(
@@ -34,7 +38,7 @@ fun ZooCard(
         Box(
             Modifier
                 .fillMaxWidth()
-                .height(140.dp)
+                .height(160.dp)
                 .padding(14.dp)
         ) {
             // id top-center like #001
@@ -50,7 +54,19 @@ fun ZooCard(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 if (entry.unlocked) {
-                    Text(text = entry.animal, style = MaterialTheme.typography.displaySmall)
+                    // Show captured photo thumbnail or emoji fallback
+                    if (entry.photoPath != null && File(entry.photoPath).exists()) {
+                        AsyncImage(
+                            model = File(entry.photoPath),
+                            contentDescription = entry.name,
+                            modifier = Modifier
+                                .size(56.dp)
+                                .clip(CircleShape),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Text(text = entry.animal, style = MaterialTheme.typography.displaySmall)
+                    }
                     Spacer(Modifier.height(6.dp))
                     Text(
                         text = entry.name,
@@ -60,7 +76,7 @@ fun ZooCard(
                 } else {
                     // locked look
                     Text(
-                        text = "🦴", // placeholder silhouette icon
+                        text = "🦴",
                         style = MaterialTheme.typography.displaySmall,
                         modifier = Modifier.alpha(0.25f)
                     )
@@ -73,7 +89,7 @@ fun ZooCard(
                     )
                 }
 
-                Spacer(Modifier.height(10.dp))
+                Spacer(Modifier.height(6.dp))
 
                 // rarity pill
                 val label = entry.rarity.name

@@ -24,21 +24,15 @@ fun GalleryScreen(
     val totalSlots = 12
     val captured = entries.count { it.unlocked }
 
-    // Build a 12-slot list: show captured entries, fill rest with locked placeholders
-    val slots = buildList {
-        addAll(entries.take(totalSlots))
-        val nextId = (entries.maxOfOrNull { it.id } ?: 0) + 1
-        val remaining = totalSlots - size
-        for (i in 0 until remaining) {
-            add(
-                ZooEntry(
-                    id = nextId + i,
-                    name = "???",
-                    animal = "❓",
-                    unlocked = false
-                )
-            )
-        }
+    // Build exactly 12 slots: for each ID 1-12, show captured entry or locked placeholder
+    val entryById = entries.associateBy { it.id }
+    val slots = (1..totalSlots).map { id ->
+        entryById[id] ?: ZooEntry(
+            id = id,
+            name = "???",
+            animal = "❓",
+            unlocked = false
+        )
     }
 
     // background like your screenshot (purple-ish). You can change this to skyblue later.

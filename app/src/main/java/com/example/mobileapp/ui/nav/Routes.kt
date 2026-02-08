@@ -5,5 +5,7 @@ object Routes {
     const val CAMERA = "camera"
     const val RESULT = "result"
     const val GALLERY = "gallery"
-    const val DETAIL = "detail"
+    const val DETAIL = "detail/{entryId}"
+
+    fun detail(entryId: Int) = "detail/$entryId"
 }
