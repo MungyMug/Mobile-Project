@@ -6,6 +6,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavType
 import androidx.navigation.compose.*
 import androidx.navigation.navArgument
+import com.example.mobileapp.ui.model.AnimalPool
 import com.example.mobileapp.ui.model.EntryStorage
 import com.example.mobileapp.ui.model.ZooEntry
 import com.example.mobileapp.ui.screens.*
@@ -24,7 +25,7 @@ fun AppNav() {
         mutableStateListOf<ZooEntry>().apply { addAll(saved) }
     }
 
-    // Find the lowest available slot ID (1-12)
+    // Find the lowest available slot ID (1..12)
     fun nextAvailableId(): Int? {
         val usedIds = entries.map { it.id }.toSet()
         return (1..TOTAL_SLOTS).firstOrNull { it !in usedIds }
@@ -32,16 +33,19 @@ fun AppNav() {
 
     // Add a new pet to the lowest open slot
     fun addEntry(photoPath: String?) {
-        val id = nextAvailableId() ?: return // all 12 slots full
-        val animals = listOf("🦁 Lion", "🐼 Panda", "🐸 Frog", "🍌 Banana", "🍎 Apple")
-        entries.add(
-            ZooEntry(
-                id = id,
-                name = "Friend $id",
-                animal = animals.random(),
-                photoPath = photoPath
-            )
+        val slotId = nextAvailableId() ?: return // no more slots
+        val a = AnimalPool.randomAnimal()
+
+        val newEntry = ZooEntry(
+            id = slotId,
+            name = "Friend $slotId",
+            animal = a.label(),      // "🦊 Fox"
+            rarity = a.rarity,
+            unlocked = true,
+            photoPath = photoPath
         )
+
+        entries.add(newEntry)
         EntryStorage.save(context, entries.toList())
     }
 
@@ -93,42 +97,29 @@ fun AppNav() {
             )
         }
 
-        composable(Routes.RESULT) {
-            ResultScreen(
-                onSaveDone = { nav.navigate(Routes.GALLERY) },
-                onRetake = {
-                    nav.navigate(Routes.CAMERA) {
-                        popUpTo(Routes.MENU) { inclusive = false }
-                    }
-                }
-            )
-        }
-
         composable(
             route = Routes.DETAIL,
             arguments = listOf(navArgument("entryId") { type = NavType.IntType })
         ) { backStackEntry ->
             val entryId = backStackEntry.arguments?.getInt("entryId") ?: 0
             val entry = entries.find { it.id == entryId }
+
             if (entry != null) {
                 DetailScreen(
                     entry = entry,
-                    onBack = {
-                        nav.navigate(Routes.GALLERY) {
-                            popUpTo(Routes.MENU) { inclusive = false }
-                        }
-                    },
+                    onBack = { nav.popBackStack() },
                     onRelease = { releasedEntry ->
                         releasedEntry.photoPath?.let { path ->
                             try { java.io.File(path).delete() } catch (_: Exception) {}
                         }
                         entries.remove(releasedEntry)
                         EntryStorage.save(context, entries.toList())
-                        nav.navigate(Routes.GALLERY) {
-                            popUpTo(Routes.MENU) { inclusive = false }
-                        }
+                        nav.popBackStack() // back to gallery
                     }
                 )
+            } else {
+                // if entry missing, just go back
+                LaunchedEffect(Unit) { nav.popBackStack() }
             }
         }
     }
