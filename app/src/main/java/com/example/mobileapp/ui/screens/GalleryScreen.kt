@@ -21,19 +21,8 @@ fun GalleryScreen(
     onOpenCamera: () -> Unit,
     onOpenDetail: (ZooEntry) -> Unit
 ) {
-    val totalSlots = 12
-    val captured = entries.count { it.unlocked }
-
-    // Build exactly 12 slots: for each ID 1-12, show captured entry or locked placeholder
-    val entryById = entries.associateBy { it.id }
-    val slots = (1..totalSlots).map { id ->
-        entryById[id] ?: ZooEntry(
-            id = id,
-            name = "???",
-            animal = "❓",
-            unlocked = false
-        )
-    }
+    val captured = entries.size
+    val slots = entries.sortedBy { it.id }
 
     // background like your screenshot (purple-ish). You can change this to skyblue later.
     val bg = MaterialTheme.colorScheme.primary
@@ -45,7 +34,7 @@ fun GalleryScreen(
                     Column {
                         Text("My Pets")
                         Text(
-                            "Captured: $captured/$totalSlots",
+                            "Captured: $captured",
                             style = MaterialTheme.typography.bodySmall
                         )
                     }

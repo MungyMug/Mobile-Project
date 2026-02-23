@@ -154,6 +154,28 @@ fun DetailScreen(
             )
         }
 
+        if(entry.location != null) {
+            Spacer(Modifier.height(10.dp))
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = Color.White.copy(alpha = 0.25f)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(text = "📍", fontSize = 14.sp)
+                    Spacer(Modifier.width(4.dp))
+                    Text(
+                        text = entry.location,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = Color.White,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+        }
+
         Spacer(Modifier.height(24.dp))
 
         // Description card

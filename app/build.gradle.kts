@@ -75,4 +75,5 @@ dependencies {
     // Gson for persistent data
     implementation("com.google.code.gson:gson:2.13.2")
 
+    implementation("com.google.android.gms:play-services-location:21.3.0")
 }
