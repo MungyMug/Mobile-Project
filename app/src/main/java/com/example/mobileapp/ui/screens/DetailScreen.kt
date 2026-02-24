@@ -67,6 +67,9 @@ private suspend fun fetchDescription(animal: String, nickname: String, rarity: R
         No quotes. Just the description text.
     """.trimIndent()
     return withContext(Dispatchers.IO) {
+        if (GEMINI_API_KEY == "YOUR_GEMINI_KEY_HERE") {
+            return@withContext Pair(generateDescription(animal, nickname, rarity), false)
+        }
         try {
             val url = URL("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=$GEMINI_API_KEY")
             val conn = url.openConnection() as HttpURLConnection
@@ -186,7 +189,7 @@ fun DetailScreen(
                     .aspectRatio(3f / 4f)
                     .clip(RoundedCornerShape(24.dp))
                     .background(Color.White.copy(alpha = 0.2f)),
-contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center
             ) {
                 val emojiOnly = entry.animal.split(" ").firstOrNull() ?: entry.animal
                 Text(text = emojiOnly, fontSize = 64.sp)
@@ -288,12 +291,14 @@ contentAlignment = Alignment.Center
                         color = Color(0xFF455A64)
                     )
                     Spacer(Modifier.height(10.dp))
-                    Text(
-                        text = if (descriptionFromApi) "✨ AI Generated" else "⚠️ Offline (local)",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = if (descriptionFromApi) Color(0xFF0288D1) else Color(0xFFE57373),
-                        textAlign = TextAlign.Center
-                    )
+                    if (descriptionFromApi) {
+                        Text(
+                            text = "✨ AI Generated",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color(0xFF0288D1),
+                            textAlign = TextAlign.Center
+                        )
+                    }
                 }
             }
         }
@@ -304,7 +309,7 @@ contentAlignment = Alignment.Center
         Button(
             onClick = onBack,
             modifier = Modifier
-.fillMaxWidth(0.85f)
+                .fillMaxWidth(0.85f)
                 .height(56.dp),
             shape = RoundedCornerShape(24.dp),
             colors = ButtonDefaults.buttonColors(
