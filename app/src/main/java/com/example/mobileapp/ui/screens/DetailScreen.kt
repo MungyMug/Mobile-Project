@@ -2,9 +2,6 @@ package com.example.mobileapp.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -23,7 +20,142 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.mobileapp.ui.model.Rarity
 import com.example.mobileapp.ui.model.ZooEntry
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import org.json.JSONArray
+import org.json.JSONObject
 import java.io.File
+import java.net.HttpURLConnection
+import java.net.URL
+
+private const val GEMINI_API_KEY = "YOUR_GEMINI_KEY_HERE" // ⚠️ Replace with your key
+
+// Returns Pair(description, isFromApi)
+private suspend fun fetchDescription(animal: String, nickname: String, rarity: Rarity): Pair<String, Boolean> {
+    val animalName = animal.split(" ").drop(1).joinToString(" ").ifBlank { animal }
+    val rarityLabel = rarity.name.lowercase()
+
+    val prompt = """
+        You are writing a fun, witty flavour text for a pet safari game.
+        The player just captured a $rarityLabel-rarity creature called "$animalName" and nicknamed it "$nickname".
+        Write exactly 2-3 sentences describing this pet's personality and what makes it special.
+        Keep it playful, slightly humorous, and end with something that makes the player feel lucky to have it.
+        Do not start with the animal's name. Do not use quotes. Just return the description text.
+    """.trimIndent()
+
+    return withContext(Dispatchers.IO) {
+        try {
+            val url = URL("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=$GEMINI_API_KEY")
+            val conn = url.openConnection() as HttpURLConnection
+            conn.requestMethod = "POST"
+            conn.setRequestProperty("Content-Type", "application/json")
+            conn.doOutput = true
+            conn.connectTimeout = 10_000
+            conn.readTimeout = 15_000
+
+            val body = JSONObject().apply {
+                put("contents", JSONArray().put(
+                    JSONObject().apply {
+                        put("parts", JSONArray().put(
+                            JSONObject().apply {
+                                put("text", prompt)
+                            }
+                        ))
+                    }
+                ))
+            }
+
+            conn.outputStream.use { it.write(body.toString().toByteArray()) }
+
+            val responseCode = conn.responseCode
+            if (responseCode != 200) {
+                val errorBody = conn.errorStream?.bufferedReader()?.readText() ?: "no error body"
+                return@withContext Pair("API error $responseCode: $errorBody", false)
+            }
+
+            val response = conn.inputStream.bufferedReader().readText()
+            val json = JSONObject(response)
+            val text = json
+                .getJSONArray("candidates")
+                .getJSONObject(0)
+                .getJSONObject("content")
+                .getJSONArray("parts")
+                .getJSONObject(0)
+                .getString("text")
+                .trim()
+            Pair(text, true)
+        } catch (e: Exception) {
+            Pair(generateDescription(animal, nickname, rarity), false)
+        }
+    }
+}
+
+private fun generateDescription(animal: String, nickname: String, rarity: Rarity): String {
+    val animalName = animal.split(" ").drop(1).joinToString(" ").ifBlank { animal }
+
+    val rarityIntro = when (rarity) {
+        Rarity.COMMON -> listOf(
+            "A well-known face in the wild,",
+            "Often spotted in the neighbourhood,",
+            "A familiar creature to many,",
+            "Not the rarest find, but beloved by all,",
+            "A classic safari encounter,"
+        )
+        Rarity.RARE -> listOf(
+            "Seldom seen by human eyes,",
+            "A lucky encounter on the safari trail,",
+            "Only a few have ever witnessed this creature,",
+            "Spotted once in a blue moon,",
+            "Travellers search for years to find one,"
+        )
+        Rarity.EPIC -> listOf(
+            "Legends whisper of this beast,",
+            "Ancient texts describe this creature with awe,",
+            "Few survive an encounter — even fewer capture one,",
+            "The stuff of myths and campfire stories,",
+            "Even seasoned explorers go pale at the sight,"
+        )
+        Rarity.LEGENDARY -> listOf(
+            "Once thought to exist only in dreams,",
+            "The rarest discovery in safari history,",
+            "Scholars have debated its existence for centuries,",
+            "A single sighting sends shockwaves through the scientific world,",
+            "No living explorer had seen one — until now,"
+        )
+    }.random()
+
+    val traits = listOf(
+        "Known for its surprisingly strong opinions about snacks.",
+        "Has a habit of staring directly into your soul at 3am.",
+        "Experts believe it can sense WiFi signals.",
+        "Unusually fast when motivated by food.",
+        "Will absolutely judge you for your music taste.",
+        "Sleeps 18 hours a day and has zero regrets.",
+        "Experts estimate it has outsmarted at least three scientists.",
+        "Communicates exclusively through aggressive eye contact.",
+        "Has never lost a staring contest. Not once.",
+        "Rumoured to hoard shiny objects under its bed.",
+        "Surprisingly good at parallel parking.",
+        "Known to disappear the moment you need it most.",
+        "Has a signature move that no one has been able to replicate.",
+        "Scientists are baffled by its ability to always find the comfiest spot.",
+        "Described by locals as 'disturbingly confident'.",
+        "Once outsmarted a vending machine. Nobody knows how.",
+        "Has a surprisingly extensive vocabulary of grumbling sounds.",
+        "Believed to have strong opinions about interior design."
+    ).random()
+
+    val bond = listOf(
+        "You and $nickname share a bond that defies explanation.",
+        "$nickname chose you — and that means something.",
+        "Consider yourself truly lucky to have $nickname by your side.",
+        "Out of everyone in the world, $nickname found you.",
+        "The safari gods clearly had you in mind when they sent $nickname.",
+        "Treat $nickname well — creatures like this don't come around twice."
+    ).random()
+
+    return "$rarityIntro the $animalName is a creature of extraordinary character. $traits $bond"
+}
 
 @Composable
 fun DetailScreen(
@@ -44,13 +176,12 @@ fun DetailScreen(
         Rarity.LEGENDARY -> Color(0xFFFFB300)
     }
 
-    val description = when {
-        entry.animal.contains("Lion") -> "A majestic lion with a golden mane. Known for its powerful roar that can be heard from miles away."
-        entry.animal.contains("Panda") -> "A gentle panda who loves munching on bamboo all day. Surprisingly fast when it wants to be!"
-        entry.animal.contains("Frog") -> "A tiny tree frog with bright colors. Don't let its size fool you — it's full of energy!"
-        entry.animal.contains("Banana") -> "A rare banana buddy found in the wild. Sweet personality and always happy to see you."
-        entry.animal.contains("Apple") -> "A crispy apple critter that rolled right into your collection. Crunchy and full of surprises!"
-        else -> "A mysterious creature you discovered on your safari adventure. Not much is known about it yet!"
+    var description by remember(entry.id) { mutableStateOf<String?>(null) }
+    var descriptionFromApi by remember(entry.id) { mutableStateOf(false) }
+    LaunchedEffect(entry.id) {
+        val (text, fromApi) = fetchDescription(entry.animal, entry.name, entry.rarity)
+        description = text
+        descriptionFromApi = fromApi
     }
 
     // Release confirmation dialog
@@ -85,7 +216,6 @@ fun DetailScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .windowInsetsPadding(WindowInsets.statusBars)
                 .padding(horizontal = 12.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -202,12 +332,27 @@ fun DetailScreen(
                     color = Color(0xFF0288D1)
                 )
                 Spacer(Modifier.height(12.dp))
-                Text(
-                    text = description,
-                    style = MaterialTheme.typography.bodyLarge,
-                    textAlign = TextAlign.Center,
-                    color = Color(0xFF455A64)
-                )
+                if (description == null) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(28.dp),
+                        color = Color(0xFF0288D1),
+                        strokeWidth = 2.5.dp
+                    )
+                } else {
+                    Text(
+                        text = description!!,
+                        style = MaterialTheme.typography.bodyLarge,
+                        textAlign = TextAlign.Center,
+                        color = Color(0xFF455A64)
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    Text(
+                        text = if (descriptionFromApi) "✨ AI Generated" else "⚠️ Offline (local)",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (descriptionFromApi) Color(0xFF0288D1) else Color(0xFFE57373),
+                        textAlign = TextAlign.Center
+                    )
+                }
             }
         }
 
