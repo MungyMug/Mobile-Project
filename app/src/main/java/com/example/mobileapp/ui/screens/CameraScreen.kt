@@ -33,7 +33,11 @@ import kotlinx.coroutines.delay
 import java.io.File
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.roundToInt
-
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
 private data class FaceOverlay(val centerX: Float, val centerY: Float, val sizePx: Float)
 
 private fun mapFaceToView(
@@ -276,7 +280,13 @@ fun CameraScreen(
                         Text(
                             text = filterAnimal.emoji,
                             fontSize = fontSizeSp.sp,
-                            modifier = Modifier.offset { IntOffset(left, top) }
+                            modifier = Modifier
+                                .offset { IntOffset(left, top) }
+                                .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+                                .drawWithContent {
+                                    drawContent()
+                                    drawRect(Color.Black, blendMode = BlendMode.SrcIn)
+                                }
                         )
                     }
                 }
