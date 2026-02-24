@@ -8,10 +8,14 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.core.content.ContextCompat
 import androidx.navigation.compose.*
 import com.example.mobileapp.ui.model.*
 import com.example.mobileapp.ui.screens.*
+import com.example.mobileapp.ui.sound.SoundManager
 import com.google.android.gms.location.LocationServices
 import java.util.Locale
 
@@ -20,6 +24,23 @@ fun AppNav() {
     val nav = rememberNavController()
     val context = LocalContext.current
     val activity = context as? Activity
+
+    // ── Start background music when app launches ────────────────────────────
+    LaunchedEffect(Unit) { SoundManager.startMusic() }
+
+    // ── Pause music when app backgrounds, resume when it returns ────────────
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_PAUSE  -> SoundManager.stopMusic()
+                Lifecycle.Event.ON_RESUME -> SoundManager.startMusic()
+                else -> {}
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     // ── Persistent state ────────────────────────────────────────────────────
     val entries = remember {
@@ -53,15 +74,11 @@ fun AppNav() {
     }
 
     // ── Helpers ─────────────────────────────────────────────────────────────
-    fun nextAvailableId(): Int = entries.size + 1
-
-    fun renumberEntries() {
-        val renumbered = entries.sortedBy { it.id }.mapIndexed { index, entry ->
-            entry.copy(id = index + 1)
-        }
-        entries.clear()
-        entries.addAll(renumbered)
-        EntryStorage.save(context, entries.toList())
+    fun nextAvailableId(): Int {
+        val used = entries.map { it.id }.toSet()
+        var id = 1
+        while (id in used) id++
+        return id
     }
 
     fun resolveLocation(lat: Double, lng: Double): String = try {
@@ -70,15 +87,15 @@ fun AppNav() {
         if (!results.isNullOrEmpty()) {
             val a = results[0]
             when {
-                a.subLocality != null && a.locality != null -> "${a.subLocality}, ${a.locality}"
-                a.subLocality != null                       -> a.subLocality
-                a.thoroughfare != null && a.locality != null -> "${a.thoroughfare}, ${a.locality}"
-                a.locality != null                          -> a.locality
-                a.adminArea != null                         -> a.adminArea
-                else                                        -> "%.4f, %.4f".format(lat, lng)
+                a.locality != null && a.adminArea != null -> "${a.locality}, ${a.adminArea}"
+                a.locality != null   -> a.locality
+                a.adminArea != null  -> a.adminArea
+                else                 -> "%.4f, %.4f".format(lat, lng)
             }
         } else "%.4f, %.4f".format(lat, lng)
-    } catch (_: Exception) { "%.4f, %.4f".format(lat, lng) }
+    } catch (_: Exception) { "%.4f,
+%.4f".forma
+t(lat, lng) }
 
     fun saveEntry(name: String, animal: Animal, photoPath: String?, locationLabel: String?) {
         val entry = ZooEntry(
@@ -118,7 +135,7 @@ fun AppNav() {
                 streak    = currentStreak,
                 onCapture = { nav.navigate(Routes.CAMERA) },
                 onPets    = { nav.navigate(Routes.GALLERY) },
-                onExit    = { activity?.finish() }
+                onExit    = { SoundManager.stopMusic(); activity?.finish() }
             )
         }
 
@@ -181,15 +198,16 @@ fun AppNav() {
         ) { backStack ->
             val entryId = backStack.arguments?.getInt("entryId") ?: 0
             val entry = entries.find { it.id == entryId }
-            if (entry != null) {
+            if (en
+try != null) {
                 DetailScreen(
                     entry    = entry,
                     onBack   = { nav.popBackStack() },
                     onRelease = { released ->
                         released.photoPath?.let { try { java.io.File(it).delete() } catch (_: Exception) {} }
                         entries.remove(released)
-                        renumberEntries()
-                        nav.navigate(Routes.GALLERY) { popUpTo(Routes.GALLERY) { inclusive = false } }
+                        EntryStorage.save(context, entries.toList())
+                        nav.navigate(Routes.GALLERY) { popUpTo(Routes.GALLERY) { inclusive = true } }
                     }
                 )
             } else {
