@@ -61,7 +61,6 @@ object AnimalPool {
         Animal("🦚", "Peacock",     Rarity.COMMON),
 
         // ── Rare ─────────────────────────────────────────────────────────────────
-        Animal("🦄", "Unicorn",     Rarity.RARE),
         Animal("🦋", "Butterfly",   Rarity.RARE),
         Animal("🦜", "Parrot",      Rarity.RARE),
         Animal("🦈", "Shark",       Rarity.RARE),
@@ -78,16 +77,16 @@ object AnimalPool {
         Animal("🦙", "Llama",       Rarity.RARE),
         Animal("🦬", "Bison",       Rarity.RARE),
         Animal("🐆", "Cheetah",     Rarity.RARE),
-        Animal("🐅", "SaberTooth Tiger",      Rarity.RARE),
         Animal("🦅", "Eagle",       Rarity.RARE),
         Animal("🦢", "Swan",        Rarity.RARE),
         Animal("🦭", "Seal",        Rarity.RARE),
         Animal("🐊", "Croc",        Rarity.RARE),
-        Animal("🦕", "Brontosaurus",Rarity.RARE),
         Animal("🐋", "Whale",       Rarity.RARE),
         Animal("🦑", "Squid",       Rarity.RARE),
 
         // ── Epic ─────────────────────────────────────────────────────────────────
+        Animal("🐅", "SaberTooth Tiger",Rarity.EPIC),
+        Animal("🦕", "Brontosaurus",Rarity.EPIC),
         Animal("🐉", "Dragon",      Rarity.EPIC),
         Animal("🦖", "T-Rex",       Rarity.EPIC),
         Animal("🦂", "Scorpion",    Rarity.EPIC),
@@ -110,6 +109,7 @@ object AnimalPool {
         Animal("🌙", "Moon Spirit",    Rarity.LEGENDARY),
         Animal("☄️", "Comet Beast",   Rarity.LEGENDARY),
         Animal("🍄", "Shroom God",     Rarity.LEGENDARY),
+        Animal("🦄", "Unicorn",        Rarity.LEGENDARY),
     )
 
     // Weighted rarity roll (tweak the chances)
