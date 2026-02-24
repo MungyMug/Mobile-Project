@@ -164,7 +164,7 @@ fun CameraScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("You might get… ${filterAnimal.emoji} ${filterAnimal.name}") },
+                title = { Text("Who's that pet?") },
                 navigationIcon = {
                     Button(onClick = onBack, modifier = Modifier.padding(start = 8.dp)) {
                         Text("Back")
@@ -257,7 +257,7 @@ fun CameraScreen(
                     }
                 )
 
-                // ── Snapchat-style emoji overlay ───────────────────────────
+                // ── "Who's that Pokémon" silhouette below the face ──────────
                 if (viewW > 0 && viewH > 0) {
                     faceRects.forEach { rect ->
                         val overlay = mapFaceToView(
@@ -268,14 +268,13 @@ fun CameraScreen(
                             isFrontCamera = true
                         )
 
-                        // Scale font size to match face width (90%), clamped sensibly
                         val fontSizeSp = (overlay.sizePx * 0.9f /
                                 context.resources.displayMetrics.density)
                             .coerceIn(24f, 200f)
 
-                        // Offset so emoji is centred horizontally and sits ON the face
+                        // Sit below the chin, not on the face
                         val left = (overlay.centerX - overlay.sizePx / 2f).roundToInt()
-                        val top  = (overlay.centerY - overlay.sizePx * 1.05f).roundToInt()
+                        val top  = (overlay.centerY + overlay.sizePx * 0.55f).roundToInt()
 
                         Text(
                             text = filterAnimal.emoji,
