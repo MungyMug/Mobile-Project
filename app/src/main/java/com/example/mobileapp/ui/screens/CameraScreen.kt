@@ -30,6 +30,7 @@ import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetectorOptions
 import kotlinx.coroutines.delay
+import com.example.mobileapp.ui.sound.SoundManager
 import java.io.File
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.roundToInt
@@ -115,7 +116,9 @@ fun CameraScreen(
 
     LaunchedEffect(Unit) { if (!hasPermission) launcher.launch(Manifest.permission.CAMERA) }
 
-    // Pre-pick the animal so the player sees it on their face while scanning
+    //
+Pre-pi
+ck the animal so the player sees it on their face while scanning
     val filterAnimal = remember { AnimalPool.randomAnimal() }
 
     var progress by remember { mutableIntStateOf(0) }
@@ -145,6 +148,7 @@ fun CameraScreen(
             mainExecutor,
             object : ImageCapture.OnImageSavedCallback {
                 override fun onImageSaved(output: ImageCapture.OutputFileResults) {
+                    SoundManager.playShutter()
                     savedPhotoPath = photoFile.absolutePath
                     captured = true
                 }
@@ -164,7 +168,7 @@ fun CameraScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Who's that pet?") },
+                title = { Text("You might get… ${filterAnimal.emoji} ${filterAnimal.name}") },
                 navigationIcon = {
                     Button(onClick = onBack, modifier = Modifier.padding(start = 8.dp)) {
                         Text("Back")
@@ -213,7 +217,7 @@ fun CameraScreen(
                             }
                             val analysis = ImageAnalysis.Builder()
                                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                                .build()
+.build()
 
                             analysis.setAnalyzer(mainExecutor) { imageProxy ->
                                 val mediaImage = imageProxy.image
@@ -257,7 +261,7 @@ fun CameraScreen(
                     }
                 )
 
-                // ── "Who's that Pokémon" silhouette below the face ──────────
+                // ── Snapchat-style emoji overlay ───────────────────────────
                 if (viewW > 0 && viewH > 0) {
                     faceRects.forEach { rect ->
                         val overlay = mapFaceToView(
@@ -268,13 +272,14 @@ fun CameraScreen(
                             isFrontCamera = true
                         )
 
+                        // Scale font size to match face width (90%), clamped sensibly
                         val fontSizeSp = (overlay.sizePx * 0.9f /
                                 context.resources.displayMetrics.density)
                             .coerceIn(24f, 200f)
 
-                        // Sit below the chin, not on the face
+                        // Offset so emoji is centred horizontally and sits ON the face
                         val left = (overlay.centerX - overlay.sizePx / 2f).roundToInt()
-                        val top  = (overlay.centerY + overlay.sizePx * 0.55f).roundToInt()
+                        val top  = (overlay.centerY - overlay.sizePx * 1.05f).roundToInt()
 
                         Text(
                             text = filterAnimal.emoji,
@@ -298,7 +303,7 @@ fun CameraScreen(
                     .weight(0.4f)
                     .padding(16.dp),
                 verticalArrangement = Arrangement.Center
-            ) {
+) {
                 Text("Analyzing…", style = MaterialTheme.typography.headlineSmall)
                 Spacer(Modifier.height(12.dp))
                 LinearProgressIndicator(
