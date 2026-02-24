@@ -70,10 +70,12 @@ fun AppNav() {
         if (!results.isNullOrEmpty()) {
             val a = results[0]
             when {
-                a.locality != null && a.adminArea != null -> "${a.locality}, ${a.adminArea}"
-                a.locality != null   -> a.locality
-                a.adminArea != null  -> a.adminArea
-                else                 -> "%.4f, %.4f".format(lat, lng)
+                a.subLocality != null && a.locality != null -> "${a.subLocality}, ${a.locality}"
+                a.subLocality != null                       -> a.subLocality
+                a.thoroughfare != null && a.locality != null -> "${a.thoroughfare}, ${a.locality}"
+                a.locality != null                          -> a.locality
+                a.adminArea != null                         -> a.adminArea
+                else                                        -> "%.4f, %.4f".format(lat, lng)
             }
         } else "%.4f, %.4f".format(lat, lng)
     } catch (_: Exception) { "%.4f, %.4f".format(lat, lng) }
