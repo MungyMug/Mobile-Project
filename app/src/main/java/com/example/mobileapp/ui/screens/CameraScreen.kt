@@ -166,7 +166,7 @@ fun CameraScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("You might get… ${filterAnimal.emoji} ${filterAnimal.name}") },
+                title = { Text("Scan Your Face") },
                 navigationIcon = {
                     Button(onClick = onBack, modifier = Modifier.padding(start = 8.dp)) {
                         Text("Back")
