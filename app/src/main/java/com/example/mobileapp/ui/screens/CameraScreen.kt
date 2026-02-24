@@ -116,9 +116,7 @@ fun CameraScreen(
 
     LaunchedEffect(Unit) { if (!hasPermission) launcher.launch(Manifest.permission.CAMERA) }
 
-    //
-Pre-pi
-ck the animal so the player sees it on their face while scanning
+    // Pre-pick the animal so the player sees it on their face while scanning
     val filterAnimal = remember { AnimalPool.randomAnimal() }
 
     var progress by remember { mutableIntStateOf(0) }

@@ -75,7 +75,6 @@ private suspend fun fetchDescription(animal: String, nickname: String, rarity: R
             conn.doOutput = true
             conn.connectTimeout = 10_000
             conn.readTimeout = 15_000
-= 15_000
             val body = JSONObject().apply {
                 put("contents", JSONArray().put(JSONObject().apply {
                     put("parts", JSONArray().put(JSONObject().apply { put("text", prompt) }))

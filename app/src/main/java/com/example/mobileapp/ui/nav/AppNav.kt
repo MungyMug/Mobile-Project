@@ -93,9 +93,7 @@ fun AppNav() {
                 else                 -> "%.4f, %.4f".format(lat, lng)
             }
         } else "%.4f, %.4f".format(lat, lng)
-    } catch (_: Exception) { "%.4f,
-%.4f".forma
-t(lat, lng) }
+    } catch (_: Exception) { "%.4f,%.4f".format(lat, lng) }
 
     fun saveEntry(name: String, animal: Animal, photoPath: String?, locationLabel: String?) {
         val entry = ZooEntry(
@@ -198,8 +196,7 @@ t(lat, lng) }
         ) { backStack ->
             val entryId = backStack.arguments?.getInt("entryId") ?: 0
             val entry = entries.find { it.id == entryId }
-            if (en
-try != null) {
+            if (entry != null) {
                 DetailScreen(
                     entry    = entry,
                     onBack   = { nav.popBackStack() },
