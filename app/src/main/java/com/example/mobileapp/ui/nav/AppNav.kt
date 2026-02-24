@@ -53,11 +53,15 @@ fun AppNav() {
     }
 
     // ── Helpers ─────────────────────────────────────────────────────────────
-    fun nextAvailableId(): Int {
-        val used = entries.map { it.id }.toSet()
-        var id = 1
-        while (id in used) id++
-        return id
+    fun nextAvailableId(): Int = entries.size + 1
+
+    fun renumberEntries() {
+        val renumbered = entries.sortedBy { it.id }.mapIndexed { index, entry ->
+            entry.copy(id = index + 1)
+        }
+        entries.clear()
+        entries.addAll(renumbered)
+        EntryStorage.save(context, entries.toList())
     }
 
     fun resolveLocation(lat: Double, lng: Double): String = try {
@@ -182,7 +186,7 @@ fun AppNav() {
                     onRelease = { released ->
                         released.photoPath?.let { try { java.io.File(it).delete() } catch (_: Exception) {} }
                         entries.remove(released)
-                        EntryStorage.save(context, entries.toList())
+                        renumberEntries()
                         nav.navigate(Routes.GALLERY) { popUpTo(Routes.GALLERY) { inclusive = false } }
                     }
                 )
