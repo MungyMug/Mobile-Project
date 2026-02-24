@@ -125,4 +125,6 @@ object AnimalPool {
         val pool = animals.filter { it.rarity == rarity }
         return pool.random(rng)
     }
+
+    fun allAnimals(): List<Animal> = animals
 }
