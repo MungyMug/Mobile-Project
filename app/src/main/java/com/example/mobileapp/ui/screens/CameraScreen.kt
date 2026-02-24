@@ -16,6 +16,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.IntOffset
@@ -111,7 +116,6 @@ fun CameraScreen(
 
     LaunchedEffect(Unit) { if (!hasPermission) launcher.launch(Manifest.permission.CAMERA) }
 
-    // Pre-pick the animal so the player sees it on their face while scanning
     val filterAnimal = remember { AnimalPool.randomAnimal() }
 
     var progress by remember { mutableIntStateOf(0) }
@@ -160,7 +164,7 @@ fun CameraScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("You might get… ${filterAnimal.emoji} ${filterAnimal.name}") },
+                title = { Text("Who's that pet?") },
                 navigationIcon = {
                     Button(onClick = onBack, modifier = Modifier.padding(start = 8.dp)) {
                         Text("Back")
@@ -253,7 +257,7 @@ fun CameraScreen(
                     }
                 )
 
-                // ── Snapchat-style emoji overlay ───────────────────────────
+                // ── "Who's that Pokémon" silhouette below the face ───────────
                 if (viewW > 0 && viewH > 0) {
                     faceRects.forEach { rect ->
                         val overlay = mapFaceToView(
@@ -264,19 +268,35 @@ fun CameraScreen(
                             isFrontCamera = true
                         )
 
-                        // Scale font size to match face width (90%), clamped sensibly
+                        // Match silhouette size to roughly the face width
                         val fontSizeSp = (overlay.sizePx * 0.9f /
                                 context.resources.displayMetrics.density)
-                            .coerceIn(24f, 200f)
+                            .coerceIn(24f, 180f)
 
-                        // Offset so emoji is centred horizontally and sits ON the face
+                        // Place the silhouette centred horizontally on the face,
+                        // sitting just below the chin
                         val left = (overlay.centerX - overlay.sizePx / 2f).roundToInt()
-                        val top  = (overlay.centerY - overlay.sizePx * 1.05f).roundToInt()
+                        val top  = (overlay.centerY + overlay.sizePx * 0.55f).roundToInt()
 
+                        // CompositingStrategy.Offscreen renders the emoji to an isolated
+                        // buffer first, then drawWithContent overlays black using SrcIn
+                        // blend mode — which only paints where the emoji already has pixels,
+                        // producing a clean solid black silhouette of any emoji.
                         Text(
                             text = filterAnimal.emoji,
                             fontSize = fontSizeSp.sp,
-                            modifier = Modifier.offset { IntOffset(left, top) }
+                            modifier = Modifier
+                                .offset { IntOffset(left, top) }
+                                .graphicsLayer {
+                                    compositingStrategy = CompositingStrategy.Offscreen
+                                }
+                                .drawWithContent {
+                                    drawContent()
+                                    drawRect(
+                                        color = Color.Black,
+                                        blendMode = BlendMode.SrcIn
+                                    )
+                                }
                         )
                     }
                 }

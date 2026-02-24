@@ -192,7 +192,7 @@ fun ZooCard(
                 text = "#%03d".format(entry.id),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.align(Alignment.TopCenter)
+                modifier = Modifier.align(Alignment.BottomEnd)
             )
 
             Column(
@@ -248,24 +248,7 @@ fun ZooCard(
                     label = { Text(entry.rarity.name, color = chipColor, fontWeight = FontWeight.Bold) }
                 )
 
-                if (entry.unlocked && entry.location != null) {
-                    Spacer(Modifier.height(4.dp))
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(text = "📍", fontSize = 11.sp)
-                        Spacer(Modifier.width(2.dp))
-                        Text(
-                            text = entry.location,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
+
             }
 
             // Purple overlay for locked cards
