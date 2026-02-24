@@ -128,9 +128,12 @@ private fun EmojiRouletteStrip(
     val startIndex = Int.MAX_VALUE / 2
     val state = rememberLazyListState(initialFirstVisibleItemIndex = startIndex)
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(state) {
         while (true) {
-            state.scrollBy(6f)   // smoother slide
+            // If user is dragging/flinging, pause auto-scroll
+            if (!state.isScrollInProgress) {
+                state.scrollBy(6f)
+            }
             delay(16)
         }
     }
