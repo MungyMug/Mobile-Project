@@ -183,7 +183,7 @@ fun AppNav() {
                         released.photoPath?.let { try { java.io.File(it).delete() } catch (_: Exception) {} }
                         entries.remove(released)
                         EntryStorage.save(context, entries.toList())
-                        nav.navigate(Routes.GALLERY) { popUpTo(Routes.GALLERY) { inclusive = true } }
+                        nav.navigate(Routes.GALLERY) { popUpTo(Routes.GALLERY) { inclusive = false } }
                     }
                 )
             } else {
