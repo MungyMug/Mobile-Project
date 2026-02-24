@@ -40,7 +40,7 @@ fun MainMenuScreen(
             .padding(horizontal = 28.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(Modifier.weight(0.4f))
+        Spacer(Modifier.weight(0.6f))
 
         Text(
             text  = "PETSAFARI",
@@ -57,12 +57,12 @@ fun MainMenuScreen(
             color = Color.White.copy(alpha = 0.9f)
         )
 
-        Spacer(Modifier.height(120.dp))
+        Spacer(Modifier.height(40.dp))
 
         // Center the roulette area
-        Spacer(Modifier.weight(0.18f))
+        Spacer(Modifier.weight(0.30f))
         EmojiRouletteStrip(emojis = emojis, modifier = Modifier.fillMaxWidth())
-        Spacer(Modifier.weight(0.18f))
+        Spacer(Modifier.weight(0.10f))
 
         // Streak badge — only shown if streak is active
         if (streak > 0) {
