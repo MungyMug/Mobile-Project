@@ -91,13 +91,14 @@ fun AppNav() {
         if (!results.isNullOrEmpty()) {
             val a = results[0]
             when {
-                a.locality != null && a.adminArea != null -> "${a.locality}, ${a.adminArea}"
+                a.subLocality != null -> a.subLocality  // Bugis, Punggol, Sengkang etc.
+                a.thoroughfare != null && a.locality != null -> "${a.thoroughfare}, ${a.locality}"
                 a.locality != null   -> a.locality
                 a.adminArea != null  -> a.adminArea
                 else                 -> "%.4f, %.4f".format(lat, lng)
             }
         } else "%.4f, %.4f".format(lat, lng)
-    } catch (_: Exception) { "%.4f,%.4f".format(lat, lng) }
+    } catch (_: Exception) { "%.4f, %.4f".format(lat, lng) }
 
     fun saveEntry(name: String, animal: Animal, photoPath: String?, locationLabel: String?) {
         val entry = ZooEntry(
